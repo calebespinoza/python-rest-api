@@ -2,7 +2,7 @@ pipeline {
     options { buildDiscarder(logRotator(numToKeepStr: '5')) }
     agent { label 'automation' }
     environment {
-        $PROJECT_NAME = "python-rest-api"
+        PROJECT_NAME = "python-rest-api"
     }
     stages {
         stage ('Build') {
