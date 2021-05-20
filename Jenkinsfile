@@ -38,11 +38,11 @@ pipeline {
             steps {
                 sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER ."
             }
-        }
-        post {
-            failure {
-                script {
-                    sh "docker rmi \$(docker images --filter dangling=true -q)"
+            post {
+                failure {
+                    script {
+                        sh "docker rmi \$(docker images --filter dangling=true -q)"
+                    }
                 }
             }
         }
@@ -54,11 +54,11 @@ pipeline {
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PWD | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
             }
-        }
-        post {
-            success {
-                script {
-                    sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+            post {
+                success {
+                    script {
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                    }
                 }
             }
         }
