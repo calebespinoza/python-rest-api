@@ -41,7 +41,9 @@ pipeline {
         }
         post {
             failure {
-                sh "docker rmi \$(docker images --filter dangling=true -q)"
+                script {
+                    sh "docker rmi \$(docker images --filter dangling=true -q)"
+                }
             }
         }
 
@@ -55,7 +57,9 @@ pipeline {
         }
         post {
             success {
-                sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                script {
+                    sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                }
             }
         }
     }
