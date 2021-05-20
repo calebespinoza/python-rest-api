@@ -53,6 +53,7 @@ pipeline {
             }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
             }
             post {
                 success {
