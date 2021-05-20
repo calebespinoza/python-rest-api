@@ -1,0 +1,5 @@
+.dockerignore
+Dockerfile
+.gitignore
+__pycache__
+Jenkinsfile
