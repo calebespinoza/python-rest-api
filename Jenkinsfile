@@ -5,7 +5,8 @@ pipeline {
             steps {
                 sh """
                 #!/bin/bash
-                apt install python3 python3-pip python3-venv -y
+                # These packages should already be installed in the agent
+                # apt install python3 python3-pip python3-venv -y
                 python3 -m venv ./venv
                 source ./venv/bin/activate
                 pip install pipenv
