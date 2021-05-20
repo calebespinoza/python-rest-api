@@ -1,6 +1,9 @@
 pipeline {
     options { buildDiscarder(logRotator(numToKeepStr: '5')) }
     agent { label 'automation' }
+    environment {
+        $PROJECT_NAME = "python-rest-api"
+    }
     stages {
         stage ('Build') {
             steps {
@@ -18,7 +21,14 @@ pipeline {
 
         stage ('Static Code Analysis') {
             steps {
-                echo "Sonarqube"
+                script {
+                    def scannerHome = tool 'sonarqube-scanner-at'
+                    def scannerParameters = "-Dsonar.projectName=$PROJECT_NAME " + 
+                        "-Dsonar.projectKey=$PROJECT_NAME -Dsonar.sources=."
+                    withSonarQubeEnv('sonarqube-automation') {
+                        sh "${scannerHome}/bin/sonar-scanner ${scannerParameters}"
+                    }
+                }
             }
         }
     }
