@@ -3,7 +3,9 @@ pipeline {
     agent { label 'automation' }
     environment {
         PROJECT_NAME = "python-rest-api"
+        PRIVATE_REGISTRY_URL = "192.168.90.7:8083"
     }
+
     stages {
         stage ('Build') {
             steps {
@@ -29,6 +31,31 @@ pipeline {
                         sh "${scannerHome}/bin/sonar-scanner ${scannerParameters}"
                     }
                 }
+            }
+        }
+
+        stage ('Image Build') {
+            steps {
+                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER ."
+            }
+        }
+        post {
+            failure {
+                sh "docker rmi $(docker images --filter dangling=true -q)"
+            }
+        }
+
+        stage ("Promote Image") {
+            environment {
+                NEXUS_CREDENTIAL = credentials("nexus-credential")
+            }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PWD | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+            }
+        }
+        post {
+            success {
+                sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
             }
         }
     }
