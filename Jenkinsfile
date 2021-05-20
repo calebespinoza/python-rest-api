@@ -52,10 +52,15 @@ pipeline {
                 NEXUS_CREDENTIAL = credentials("nexus-credential")
             }
             steps {
-                sh "echo $NEXUS_CREDENTIAL_PWD | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
             }
             post {
                 success {
+                    script {
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                    }
+                }
+                failure {
                     script {
                         sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
                     }
