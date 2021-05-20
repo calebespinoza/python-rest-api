@@ -59,11 +59,13 @@ pipeline {
                 success {
                     script {
                         sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
                 failure {
                     script {
                         sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER"
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
             }
