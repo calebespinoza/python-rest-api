@@ -33,7 +33,6 @@ pipeline {
         }
 
         stage ('Acceptance Tests') {
-            when { branch 'dev' }
             steps { 
                 sh "curl http://localhost:8003/hello/ | grep 'Hello World!'"
                 sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
