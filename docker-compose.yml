@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
     api:
-        image: ${PRIVATE_REGISTRY_URL}/${PROJECT_NAME}:${STG_TAG}
+        image: ${PRIVATE_REGISTRY_URL}/${PROJECT_NAME}:${TAG}
         #image: localhost:8083/python-rest-api:30-stg
         ports: 
-            - 8003-8004:8001
+            - $RANGE_PORTS:8001

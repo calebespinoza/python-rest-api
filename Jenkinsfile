@@ -4,7 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = "python-rest-api"
         PRIVATE_REGISTRY_URL = "192.168.90.7:8083"
-        STG_TAG = "$BUILD_NUMBER-stg"
+        TAG = "$BUILD_NUMBER-stg"
         PROD_TAG = "$BUILD_NUMBER-prod"
         NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
@@ -38,8 +38,9 @@ pipeline {
         }
 
         stage ('Image Build') {
+            when { branch 'dev' }
             steps {
-                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG ."
+                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG ."
             }
             post {
                 failure {
@@ -51,14 +52,15 @@ pipeline {
         }
 
         stage ("Promote Image") {
+            when { branch 'dev' }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
-                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
             }
             post {
                 always {
                     script {
-                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
                         sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
@@ -66,22 +68,48 @@ pipeline {
         }
 
         stage ('Deploy to Staging') {
-            //when { branch 'feature/deploy-to-stg' }
+            when { branch 'dev' }
+            environment {
+                RANGE_PORTS = "8003-8004"
+            }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
                 sh "docker-compose up -d --scale api=2"
-                //sh "docker pull $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
-                sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
-                sh "docker logout $PRIVATE_REGISTRY_URL"
+                sleep 15
+                sh "curl -I http://localhost:8003 --silent | grep 200"
+                sh "curl -I http://localhost:8004 --silent | grep 200"
             }
-            //post {
-            //    always {
-            //        script {
-            //            sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
-            //            sh "docker logout $PRIVATE_REGISTRY_URL"
-            //        }
-            //    }
-            //}
+            post {
+                always {
+                    script {
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
+                    }
+                }
+            }
         }
+
+        stage ('Acceptance Tests') {
+            when { branch 'dev' }
+            steps { 
+                sh "curl http://localhost:8003/hello/ | grep 'Hello World!'"
+                sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
+                sh "curl http://localhost:8004/hello/ | grep 'Hello World!'"
+                sh "curl http://localhost:8004/hello/User | grep 'Hello User!'"
+            }
+        }
+
+        //stage ('Tag Prod Image') {
+        //    when { branch 'dev' }
+        //    steps {
+        //        sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
+        //    }
+        //    post {
+        //        failure {
+        //            script {
+        //                sh "docker rmi \$(docker images --filter dangling=true -q)"
+        //            }
+        //        }
+        //    }
+        //}
     }
 }
