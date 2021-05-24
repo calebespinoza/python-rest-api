@@ -99,7 +99,7 @@ pipeline {
         }
 
         stage ('Tag Prod Image') {
-            when { branch 'dev' }
+            //when { branch 'dev' }
             steps {
                 sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
             }
