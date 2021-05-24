@@ -6,6 +6,7 @@ pipeline {
         PRIVATE_REGISTRY_URL = "192.168.90.7:8083"
         STG_TAG = "$BUILD_NUMBER-stg"
         PROD_TAG = "$BUILD_NUMBER-prod"
+        NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
 
     stages {
@@ -50,9 +51,6 @@ pipeline {
         }
 
         stage ("Promote Image") {
-            environment {
-                NEXUS_CREDENTIAL = credentials("nexus-credential")
-            }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
                 sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"

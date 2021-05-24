@@ -3,3 +3,7 @@ Dockerfile
 .gitignore
 __pycache__
 Jenkinsfile
+docker-compose.yml
+Pipfile
+Pipfile.lock
+.env
