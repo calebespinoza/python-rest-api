@@ -130,5 +130,27 @@ pipeline {
                 }
             }
         }
+
+        stage ('Deploy to Production') {
+            //when { branch 'dev' }
+            environment {
+                RANGE_PORTS = "8001-8002"
+                TAG = "$PROD_TAG"
+            }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker-compose up -d --scale api=2"
+                sleep 15
+                sh "curl -I http://localhost:8001 --silent | grep 200"
+                sh "curl -I http://localhost:8002 --silent | grep 200"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
+                    }
+                }
+            }
+        }
     }
 }
