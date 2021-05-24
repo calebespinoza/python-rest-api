@@ -4,6 +4,8 @@ pipeline {
     environment {
         PROJECT_NAME = "python-rest-api"
         PRIVATE_REGISTRY_URL = "192.168.90.7:8083"
+        STG_TAG = "$BUILD_NUMBER-stg"
+        PROD_TAG = "$BUILD_NUMBER-prod"
     }
 
     stages {
@@ -36,7 +38,7 @@ pipeline {
 
         stage ('Image Build') {
             steps {
-                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg ."
+                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG ."
             }
             post {
                 failure {
@@ -53,14 +55,30 @@ pipeline {
             }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
-                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
             }
             post {
                 always {
                     script {
-                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg"
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
                         sh "docker logout $PRIVATE_REGISTRY_URL"
-                        sh "docker version"
+                    }
+                }
+            }
+        }
+
+        stage ('Deploy to Staging') {
+            when { branch 'feature/deploy-to-stg' }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker-compose up -d --scale api=2"
+                //sh "docker pull $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
             }
