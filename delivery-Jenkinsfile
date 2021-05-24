@@ -10,6 +10,7 @@ pipeline {
         PRIVATE_REGISTRY_URL = "${params.PRIVATE_REGISTRY_URL_PARAM}"
         PROJECT_NAME = "${params.PROJECT_NAME_PARAM}"
         TAG = "${params.TAG_PARAM}"
+        PROD_TAG "deliverable-prod-$BUILD_NUMBER"
         RANGE_PORTS = "${params.RANGE_PORTS_PARAM}"
         NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
@@ -38,6 +39,37 @@ pipeline {
                 sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
                 sh "curl http://localhost:8004/hello/ | grep 'Hello World!'"
                 sh "curl http://localhost:8004/hello/User | grep 'Hello User!'"
+            }
+        }
+
+        stage ('Tag Prod Image') {
+            steps {
+                sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
+            }
+            post {
+                failure {
+                    script {
+                        sh "docker rmi \$(docker images --filter dangling=true -q)"
+                    }
+                }
+            }
+        }
+
+        stage ("Promote Prod Image") {
+            environment {
+                TAG = "$PROD_TAG"
+            }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
+                    }
+                }
             }
         }
     }
