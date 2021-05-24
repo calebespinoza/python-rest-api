@@ -4,6 +4,9 @@ pipeline {
     environment {
         PROJECT_NAME = "python-rest-api"
         PRIVATE_REGISTRY_URL = "192.168.90.7:8083"
+        TAG = "$BUILD_NUMBER-stg"
+        PROD_TAG = "$BUILD_NUMBER-prod"
+        NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
 
     stages {
@@ -35,8 +38,9 @@ pipeline {
         }
 
         stage ('Image Build') {
+            when { branch 'dev' }
             steps {
-                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg ."
+                sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG ."
             }
             post {
                 failure {
@@ -48,19 +52,117 @@ pipeline {
         }
 
         stage ("Promote Image") {
-            environment {
-                NEXUS_CREDENTIAL = credentials("nexus-credential")
-            }
+            when { branch 'dev' }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
-                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
             }
             post {
                 always {
                     script {
-                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$BUILD_NUMBER-stg"
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
                         sh "docker logout $PRIVATE_REGISTRY_URL"
-                        sh "docker version"
+                    }
+                }
+            }
+        }
+
+        stage ('Deploy to Staging') {
+            when { branch 'dev' }
+            steps {
+                script {
+                    build job: 'python-rest-api-staging', 
+                    parameters: [
+                        string(name: 'PRIVATE_REGISTRY_URL_PARAM', value: "$PRIVATE_REGISTRY_URL"), 
+                        string(name: 'PROJECT_NAME_PARAM', value: "$PROJECT_NAME"), 
+                        string(name: 'TAG_PARAM', value: "$TAG"), 
+                        string(name: 'RANGE_PORTS_PARAM', value: '8003-8004')
+                    ]
+                }
+            }
+        }
+
+        //stage ('Deploy to Staging') {
+        //    when { branch 'dev' }
+        //    environment {
+        //        RANGE_PORTS = "8003-8004"
+        //    }
+        //    steps {
+        //        sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+        //        sh "docker-compose up -d --scale api=2"
+        //        sleep 15
+        //        sh "curl -I http://localhost:8003 --silent | grep 200"
+        //        sh "curl -I http://localhost:8004 --silent | grep 200"
+        //    }
+        //    post {
+        //        always {
+        //            script {
+        //                sh "docker logout $PRIVATE_REGISTRY_URL"
+        //            }
+        //        }
+        //    }
+        //}
+
+        //stage ('Acceptance Tests') {
+        //    when { branch 'dev' }
+        //    steps { 
+        //        sh "curl http://localhost:8003/hello/ | grep 'Hello World!'"
+        //        sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
+        //        sh "curl http://localhost:8004/hello/ | grep 'Hello World!'"
+        //        sh "curl http://localhost:8004/hello/User | grep 'Hello User!'"
+        //    }
+        //}
+
+        //stage ('Tag Prod Image') {
+        //    when { branch 'dev' }
+        //    steps {
+        //        sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
+        //    }
+        //    post {
+        //        failure {
+        //            script {
+        //                sh "docker rmi \$(docker images --filter dangling=true -q)"
+        //            }
+        //        }
+        //    }
+        //}
+
+        //stage ("Promote Prod Image") {
+        //    when { branch 'dev' }
+        //    environment {
+        //        TAG = "$PROD_TAG"
+        //    }
+        //    steps {
+        //        sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+        //        sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+        //    }
+        //    post {
+        //        always {
+        //            script {
+        //                sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+        //                sh "docker logout $PRIVATE_REGISTRY_URL"
+        //            }
+        //        }
+        //    }
+        //}
+
+        stage ('Deploy to Production') {
+            when { branch 'main' }
+            environment {
+                RANGE_PORTS = "8001-8002"
+                TAG = "$PROD_TAG"
+            }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker-compose up -d --scale api=2"
+                sleep 15
+                sh "curl -I http://localhost:8001 --silent | grep 200"
+                sh "curl -I http://localhost:8002 --silent | grep 200"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
             }
