@@ -10,7 +10,7 @@ pipeline {
         PRIVATE_REGISTRY_URL = "${params.PRIVATE_REGISTRY_URL_PARAM}"
         PROJECT_NAME = "${params.PROJECT_NAME_PARAM}"
         TAG = "${params.TAG_PARAM}"
-        PROD_TAG "deliverable-prod-$BUILD_NUMBER"
+        PROD_TAG = "deliverable-prod-$BUILD_NUMBER"
         RANGE_PORTS = "${params.RANGE_PORTS_PARAM}"
         NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
