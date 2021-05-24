@@ -115,7 +115,7 @@ pipeline {
         stage ("Promote Prod Image") {
             //when { branch 'dev' }
             environment {
-                TAG = $PROD_TAG
+                TAG = "$PROD_TAG"
             }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
