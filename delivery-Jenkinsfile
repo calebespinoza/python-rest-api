@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'automation' }
+    parameters {
+        string(name: 'PRIVATE_REGISTRY_URL_PARAM', defaultValue: '')
+        string(name: 'PROJECT_NAME_PARAM', defaultValue: '')
+        string(name: 'TAG_PARAM', defaultValue: '')
+        string(name: 'RANGE_PORTS_PARAM', defaultValue: '8003-8004')
+    }
+    environment {
+        PRIVATE_REGISTRY_URL = params.PRIVATE_REGISTRY_URL_PARAM
+        PROJECT_NAME = params.PROJECT_NAME_PARAM
+        TAG = params.TAG_PARAM
+        RANGE_PORTS = params.RANGE_PORTS_PARAM
+        NEXUS_CREDENTIAL = credentials("nexus-credential")
+    }
+
+    stages {
+        stage ('Deploy to Staging') {
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker-compose up -d --scale api=2"
+                sleep 15
+                sh "curl -I http://localhost:8003 --silent | grep 200"
+                sh "curl -I http://localhost:8004 --silent | grep 200"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
+                    }
+                }
+            }
+        }
+
+        stage ('Acceptance Tests') {
+            when { branch 'dev' }
+            steps { 
+                sh "curl http://localhost:8003/hello/ | grep 'Hello World!'"
+                sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
+                sh "curl http://localhost:8004/hello/ | grep 'Hello World!'"
+                sh "curl http://localhost:8004/hello/User | grep 'Hello User!'"
+            }
+        }
+    }
+}
