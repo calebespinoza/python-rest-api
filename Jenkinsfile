@@ -38,7 +38,7 @@ pipeline {
         }
 
         stage ('Image Build') {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             steps {
                 sh "docker build -t $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG ."
             }
@@ -52,7 +52,7 @@ pipeline {
         }
 
         stage ("Promote Image") {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
                 sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
@@ -68,7 +68,7 @@ pipeline {
         }
 
         stage ('Deploy to Staging') {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             environment {
                 RANGE_PORTS = "8003-8004"
             }
@@ -89,7 +89,7 @@ pipeline {
         }
 
         stage ('Acceptance Tests') {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             steps { 
                 sh "curl http://localhost:8003/hello/ | grep 'Hello World!'"
                 sh "curl http://localhost:8003/hello/User | grep 'Hello User!'"
@@ -99,7 +99,7 @@ pipeline {
         }
 
         stage ('Tag Prod Image') {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             steps {
                 sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
             }
@@ -113,7 +113,7 @@ pipeline {
         }
 
         stage ("Promote Prod Image") {
-            //when { branch 'dev' }
+            when { branch 'dev' }
             environment {
                 TAG = "$PROD_TAG"
             }
@@ -132,7 +132,7 @@ pipeline {
         }
 
         stage ('Deploy to Production') {
-            //when { branch 'dev' }
+            when { branch 'main' }
             environment {
                 RANGE_PORTS = "8001-8002"
                 TAG = "$PROD_TAG"
