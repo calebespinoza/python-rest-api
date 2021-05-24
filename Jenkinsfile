@@ -98,18 +98,37 @@ pipeline {
             }
         }
 
-        //stage ('Tag Prod Image') {
-        //    when { branch 'dev' }
-        //    steps {
-        //        sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
-        //    }
-        //    post {
-        //        failure {
-        //            script {
-        //                sh "docker rmi \$(docker images --filter dangling=true -q)"
-        //            }
-        //        }
-        //    }
-        //}
+        stage ('Tag Prod Image') {
+            when { branch 'dev' }
+            steps {
+                sh "docker tag $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$PROD_TAG"
+            }
+            post {
+                failure {
+                    script {
+                        sh "docker rmi \$(docker images --filter dangling=true -q)"
+                    }
+                }
+            }
+        }
+
+        stage ("Promote Image") {
+            //when { branch 'dev' }
+            environment {
+                TAG = $PROD_TAG
+            }
+            steps {
+                sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
+                sh "docker push $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+            }
+            post {
+                always {
+                    script {
+                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$TAG"
+                        sh "docker logout $PRIVATE_REGISTRY_URL"
+                    }
+                }
+            }
+        }
     }
 }
