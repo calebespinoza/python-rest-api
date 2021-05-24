@@ -68,20 +68,22 @@ pipeline {
         }
 
         stage ('Deploy to Staging') {
-            when { branch 'feature/deploy-to-stg' }
+            //when { branch 'feature/deploy-to-stg' }
             steps {
                 sh "echo $NEXUS_CREDENTIAL_PSW | docker login -u $NEXUS_CREDENTIAL_USR --password-stdin $PRIVATE_REGISTRY_URL"
                 sh "docker-compose up -d --scale api=2"
                 //sh "docker pull $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+                sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+                sh "docker logout $PRIVATE_REGISTRY_URL"
             }
-            post {
-                always {
-                    script {
-                        sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
-                        sh "docker logout $PRIVATE_REGISTRY_URL"
-                    }
-                }
-            }
+            //post {
+            //    always {
+            //        script {
+            //            sh "docker rmi -f $PRIVATE_REGISTRY_URL/$PROJECT_NAME:$STG_TAG"
+            //            sh "docker logout $PRIVATE_REGISTRY_URL"
+            //        }
+            //    }
+            //}
         }
     }
 }
