@@ -112,7 +112,7 @@ pipeline {
             }
         }
 
-        stage ("Promote Image") {
+        stage ("Promote Prod Image") {
             //when { branch 'dev' }
             environment {
                 TAG = $PROD_TAG
