@@ -7,10 +7,10 @@ pipeline {
         string(name: 'RANGE_PORTS_PARAM', defaultValue: '8003-8004')
     }
     environment {
-        PRIVATE_REGISTRY_URL = params.PRIVATE_REGISTRY_URL_PARAM
-        PROJECT_NAME = params.PROJECT_NAME_PARAM
-        TAG = params.TAG_PARAM
-        RANGE_PORTS = params.RANGE_PORTS_PARAM
+        PRIVATE_REGISTRY_URL = "${params.PRIVATE_REGISTRY_URL_PARAM}"
+        PROJECT_NAME = "${params.PROJECT_NAME_PARAM}"
+        TAG = "${params.TAG_PARAM}"
+        RANGE_PORTS = "${params.RANGE_PORTS_PARAM}"
         NEXUS_CREDENTIAL = credentials("nexus-credential")
     }
 
