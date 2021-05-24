@@ -68,7 +68,7 @@ pipeline {
         }
 
         stage ('Deploy to Staging') {
-            when { branch 'dev' }
+            //when { branch 'dev' }
             steps {
                 script {
                     build job: 'python-rest-api-staging', 
