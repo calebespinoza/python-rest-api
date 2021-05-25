@@ -22,6 +22,7 @@ pipeline {
             steps {
                 //sh "python3 test.py"
                 sh "coverage run -m unittest test.py"
+                sh "coverage xml"
             }
         }
 
