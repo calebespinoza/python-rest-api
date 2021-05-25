@@ -98,7 +98,7 @@ pipeline {
             post {
                 always {
                     script {
-                        // comment
+                        // comment 2
                         sh "docker logout $PRIVATE_REGISTRY_URL"
                     }
                 }
