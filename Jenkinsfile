@@ -18,9 +18,10 @@ pipeline {
             }
         }
 
-        stage ('Unit Tests') {
+        stage ('Unit Tests and Coverage') {
             steps {
-                sh "python3 test.py"
+                //sh "python3 test.py"
+                sh "coverage run -m unittest test.py"
             }
         }
 
@@ -29,7 +30,7 @@ pipeline {
                 script {
                     def scannerHome = tool 'sonarqube-scanner-at'
                     def scannerParameters = "-Dsonar.projectName=$PROJECT_NAME " + 
-                        "-Dsonar.projectKey=$PROJECT_NAME -Dsonar.sources=."
+                        "-Dsonar.projectKey=$PROJECT_NAME -Dsonar.sources=. -Dsonar.python.coverage.reportPaths=coverage.xml"
                     withSonarQubeEnv('sonarqube-automation') {
                         sh "${scannerHome}/bin/sonar-scanner ${scannerParameters}"
                     }
